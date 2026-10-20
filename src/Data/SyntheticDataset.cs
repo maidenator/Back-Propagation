@@ -14,6 +14,9 @@ namespace BackPropagation.Data
         /// </summary>
         public static double[][] MakeAllData(int numInput, int numHidden, int numOutput, int numRows, int seed)
         {
+            if (numRows <= 0)
+                throw new ArgumentOutOfRangeException(nameof(numRows), "The dataset must contain at least one row.");
+
             var rnd = new Random(seed);
             int numWeights = (numInput * numHidden) + numHidden + (numHidden * numOutput) + numOutput;
             double[] weights = new double[numWeights];
@@ -51,6 +54,11 @@ namespace BackPropagation.Data
         public static void SplitTrainTest(double[][] allData, double trainPct, int seed,
             out double[][] trainData, out double[][] testData)
         {
+            if (allData.Length == 0)
+                throw new ArgumentException("Dataset must contain at least one row.", nameof(allData));
+            if (trainPct <= 0.0 || trainPct >= 1.0)
+                throw new ArgumentOutOfRangeException(nameof(trainPct), "Training percentage must be between 0.0 and 1.0 (exclusive).");
+
             var rnd = new Random(seed);
             int totRows = allData.Length;
             int numTrainRows = (int)(totRows * trainPct);

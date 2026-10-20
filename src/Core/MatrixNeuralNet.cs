@@ -48,6 +48,10 @@ namespace BackPropagation.Core
 
         public MatrixNeuralNet(int numInput, int numHidden, int numOutput, int seed = 0)
         {
+            if (numInput <= 0) throw new ArgumentOutOfRangeException(nameof(numInput), "The network must have at least one input.");
+            if (numHidden <= 0) throw new ArgumentOutOfRangeException(nameof(numHidden), "The network must have at least one hidden neuron.");
+            if (numOutput <= 0) throw new ArgumentOutOfRangeException(nameof(numOutput), "The network must have at least one output.");
+
             _numInput = numInput;
             _numHidden = numHidden;
             _numOutput = numOutput;
@@ -145,6 +149,9 @@ namespace BackPropagation.Core
         /// </summary>
         public double[] ComputeOutputs(double[] xValues)
         {
+            if (xValues.Length != _numInput)
+                throw new ArgumentException($"Expected {_numInput} input values, received {xValues.Length}.", nameof(xValues));
+
             double[] hSums = new double[_numHidden];
             double[] oSums = new double[_numOutput];
 
@@ -198,6 +205,10 @@ namespace BackPropagation.Core
             double weightDecay = 0.0,
             Action<int, double>? epochCallback = null)
         {
+            ValidateDataset(trainData, nameof(trainData));
+            if (maxEpochs < 0)
+                throw new ArgumentOutOfRangeException(nameof(maxEpochs), "Epoch count cannot be negative.");
+
             double[][] hoGrads = MakeMatrix(_numHidden, _numOutput, 0.0);
             double[] obGrads = new double[_numOutput];
             double[][] ihGrads = MakeMatrix(_numInput, _numHidden, 0.0);
@@ -366,6 +377,8 @@ namespace BackPropagation.Core
         /// </summary>
         public double MeanSquaredError(double[][] dataset)
         {
+            ValidateDataset(dataset, nameof(dataset));
+
             double sumSquaredError = 0.0;
             double[] xValues = new double[_numInput];
             double[] tValues = new double[_numOutput];
@@ -391,6 +404,8 @@ namespace BackPropagation.Core
         /// </summary>
         public double CrossEntropyError(double[][] dataset)
         {
+            ValidateDataset(dataset, nameof(dataset));
+
             double sumCrossEntropy = 0.0;
             double[] xValues = new double[_numInput];
             double[] tValues = new double[_numOutput];
@@ -416,6 +431,8 @@ namespace BackPropagation.Core
 
         public double Accuracy(double[][] dataset)
         {
+            ValidateDataset(dataset, nameof(dataset));
+
             int correct = 0;
             double[] xValues = new double[_numInput];
             double[] tValues = new double[_numOutput];
@@ -432,8 +449,28 @@ namespace BackPropagation.Core
             return (double)correct / dataset.Length;
         }
 
+        private void ValidateDataset(double[][] dataset, string paramName)
+        {
+            if (dataset.Length == 0)
+                throw new ArgumentException("Dataset must contain at least one row.", paramName);
+
+            int rowWidth = _numInput + _numOutput;
+            for (int i = 0; i < dataset.Length; ++i)
+            {
+                if (dataset[i].Length < rowWidth)
+                {
+                    throw new ArgumentException(
+                        $"Dataset row {i} has {dataset[i].Length} values; expected at least {rowWidth} ({_numInput} inputs + {_numOutput} targets).",
+                        paramName);
+                }
+            }
+        }
+
         public static int MaxIndex(double[] vector)
         {
+            if (vector.Length == 0)
+                throw new ArgumentException("Vector must contain at least one value.", nameof(vector));
+
             int bigIndex = 0;
             double biggestVal = vector[0];
             for (int i = 1; i < vector.Length; ++i)

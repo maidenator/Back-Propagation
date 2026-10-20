@@ -14,35 +14,59 @@ namespace BackPropagation.SelfDoc
             Console.WriteLine("================================================================================");
             Console.WriteLine("                      NEURAL NETWORK TOPOLOGY ARCHITECTURE                      ");
             Console.WriteLine("================================================================================");
-            Console.WriteLine($"    Input Layer ({numInput})       Hidden Layer ({numHidden})       Output Layer ({numOutput})");
-            Console.WriteLine("    ┌─────────────┐             ┌──────────────┐             ┌─────────────┐");
+
+            const int cellWidth = 16;
+            const string leading = "   ";
+            const string gap = "  ──>  ";
+            string horizontal = new string('─', cellWidth);
+
+            Console.WriteLine(
+                $"{leading}{Center($"Input Layer ({numInput})", cellWidth + 2)}{gap}" +
+                $"{Center($"Hidden Layer ({numHidden})", cellWidth + 2)}{gap}" +
+                $"{Center($"Output Layer ({numOutput})", cellWidth + 2)}");
+            Console.WriteLine(
+                $"{leading}┌{horizontal}┐     ┌{horizontal}┐     ┌{horizontal}┐");
 
             int maxRows = Math.Max(numInput, Math.Max(numHidden, numOutput));
-            maxRows = Math.Min(maxRows, 8); // Keep compact for console display
+            bool truncated = maxRows > 8;
+            int rowsToShow = Math.Min(maxRows, 8);
 
-            for (int r = 0; r < maxRows; ++r)
+            for (int r = 0; r < rowsToShow; ++r)
             {
-                string inNode = (r < numInput) ? $"  │  Node x{r}   │" : "  │             │";
-                if (r == maxRows - 1 && numInput > maxRows) inNode = "  │   ...       │";
+                string inLabel = r < numInput ? $"Node x{r}" : string.Empty;
+                string hidLabel = r < numHidden ? $"Node h{r}" : string.Empty;
+                string outLabel = r < numOutput ? $"Node y{r}" : string.Empty;
 
-                string inToHidArrow = (r < numInput && r < numHidden) ? " ────> " : "       ";
-
-                string hidNode = (r < numHidden) ? $"  │   Node h{r}  │" : "  │              │";
-                if (r == maxRows - 1 && numHidden > maxRows) hidNode = $"  │ ... (+{numHidden - maxRows + 1}) │";
-
-                string hidToOutArrow = (r < numHidden && r < numOutput) ? " ────> " : "       ";
-
-                string outNode = (r < numOutput) ? $"  │  Node y{r}   │" : "  │             │";
-                if (r == maxRows - 1 && numOutput > maxRows) outNode = "  │   ...       │";
-
-                Console.WriteLine($"{inNode}{inToHidArrow}{hidNode}{hidToOutArrow}{outNode}");
+                Console.WriteLine(
+                    $"{leading}│{Center(inLabel, cellWidth)}│{gap}" +
+                    $"│{Center(hidLabel, cellWidth)}│{gap}" +
+                    $"│{Center(outLabel, cellWidth)}│");
             }
 
-            Console.WriteLine("    └─────────────┘             └──────────────┘             └─────────────┘");
+            if (truncated)
+            {
+                Console.WriteLine(
+                    $"{leading}│{Center("...", cellWidth)}│{gap}" +
+                    $"│{Center("...", cellWidth)}│{gap}" +
+                    $"│{Center("...", cellWidth)}│");
+            }
+
+            Console.WriteLine(
+                $"{leading}└{horizontal}┘     └{horizontal}┘     └{horizontal}┘");
+
             int totalConnections = (numInput * numHidden) + (numHidden * numOutput);
             int totalBiases = numHidden + numOutput;
             Console.WriteLine($" Total Trainable Parameters: {totalConnections + totalBiases} ({totalConnections} weights + {totalBiases} biases)");
             Console.WriteLine("================================================================================\n");
+        }
+
+        private static string Center(string text, int width)
+        {
+            if (text.Length >= width)
+                return text.Substring(0, width);
+
+            int leftPadding = (width - text.Length) / 2;
+            return new string(' ', leftPadding) + text + new string(' ', width - text.Length - leftPadding);
         }
 
         public static void DisplayWeightSummary(NeuralNet net)

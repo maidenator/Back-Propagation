@@ -11,12 +11,31 @@ namespace BackPropagation.SelfDoc
     /// </summary>
     public static class MarkdownReporter
     {
+        /// <summary>
+        /// Creates a unique Markdown report path inside the generated <c>reports/</c> directory.
+        /// Millisecond precision plus a collision suffix prevents reports from overwriting
+        /// each other when several benchmarks finish within the same second.
+        /// </summary>
+        public static string CreateReportPath(string prefix)
+        {
+            Directory.CreateDirectory("reports");
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss_fff");
+            string filePath = Path.Combine("reports", $"{prefix}_{timestamp}.md");
+
+            int suffix = 2;
+            while (File.Exists(filePath))
+            {
+                filePath = Path.Combine("reports", $"{prefix}_{timestamp}_{suffix}.md");
+                ++suffix;
+            }
+
+            return filePath;
+        }
+
         public static string GenerateLogicGateReport(NeuralNet net, double[][] dataset, 
             int epochsTrained, bool isConverged, string taskName = "4-Input Logic Gate")
         {
-            Directory.CreateDirectory("reports");
-            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            string filePath = Path.Combine("reports", $"run_{timestamp}.md");
+            string filePath = CreateReportPath("run");
 
             var sb = new StringBuilder();
             sb.AppendLine($"# Neural Network Training Report: {taskName}");

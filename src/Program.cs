@@ -19,6 +19,12 @@ namespace BackPropagation
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
 
+            if (args.Contains("--help") || args.Contains("-h") || args.Contains("-?"))
+            {
+                PrintHelp();
+                return;
+            }
+
             bool forceCli = args.Contains("--cli") || args.Contains("-c");
             bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
 
@@ -83,6 +89,11 @@ namespace BackPropagation
                 case "-v":
                     AsciiVisualizer.RenderTopology(4, 5, 3);
                     break;
+                case "--help":
+                case "-h":
+                case "-?":
+                    PrintHelp();
+                    break;
                 default:
                     Console.WriteLine($"Unknown option: {flag}");
                     PrintHelp();
@@ -93,9 +104,11 @@ namespace BackPropagation
         private static void PrintHelp()
         {
             Console.WriteLine("Usage: dotnet run --project src/BackPropagation.csproj [option]");
+            Console.WriteLine("       dotnet run --project src/BackPropagation.csproj -- [option]");
             Console.WriteLine("Options:");
 #if NET8_0_WINDOWS || WINDOWS
             Console.WriteLine("  --gui, -g             Launch Windows Forms graphical interface (Windows)");
+            Console.WriteLine("  --cli, -c             Force the interactive terminal menu on Windows");
 #endif
             Console.WriteLine("  --synthetic, -s       Run CS345 4-5-3 benchmark (Standard MSE)");
             Console.WriteLine("  --cross-entropy, -ce  Run CS345 with Cross-Entropy Loss (from 'WHAT TO DO')");
@@ -104,6 +117,7 @@ namespace BackPropagation
             Console.WriteLine("  --optimize, -o        Run hidden neuron count optimization benchmark");
             Console.WriteLine("  --trace, -t           Run single-sample mathematical trace");
             Console.WriteLine("  --visualize, -v       Render ASCII network topology");
+            Console.WriteLine("  --help, -h            Show this help text");
         }
 
         private static void RunInteractiveMenu()
@@ -126,6 +140,13 @@ namespace BackPropagation
                 Console.Write("Select an option (1-9): ");
 
                 string? choice = Console.ReadLine()?.Trim();
+                if (choice is null)
+                {
+                    // End of input (Ctrl+D / redirected stdin): exit cleanly instead of looping.
+                    Console.WriteLine();
+                    return;
+                }
+
                 Console.WriteLine();
 
                 switch (choice)
@@ -183,7 +204,7 @@ namespace BackPropagation
             string? line = Console.ReadLine();
             if (string.IsNullOrWhiteSpace(line)) return;
 
-            string[] parts = line.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+            string[] parts = line.Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries);
             if (parts.Length != 4)
             {
                 Console.WriteLine("Error: Exactly 4 numbers required.");
@@ -192,7 +213,13 @@ namespace BackPropagation
 
             double[] x = new double[4];
             for (int i = 0; i < 4; ++i)
-                x[i] = double.Parse(parts[i]);
+            {
+                if (!double.TryParse(parts[i], out x[i]))
+                {
+                    Console.WriteLine($"Error: '{parts[i]}' is not a valid number.");
+                    return;
+                }
+            }
 
             double[] y = nn.ComputeOutputs(x);
             int predClass = MatrixNeuralNet.MaxIndex(y);

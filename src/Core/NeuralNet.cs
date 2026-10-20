@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 using System.IO;
 
 namespace BackPropagation.Core
@@ -36,6 +37,10 @@ namespace BackPropagation.Core
         public NeuralNet(int inputCount, int hiddenCount, int outputCount, 
             double lrpOut = 0.2, double lrpIn = 0.15, Random? rnd = null)
         {
+            if (inputCount <= 0) throw new ArgumentOutOfRangeException(nameof(inputCount), "The network must have at least one input.");
+            if (hiddenCount <= 0) throw new ArgumentOutOfRangeException(nameof(hiddenCount), "The network must have at least one hidden neuron.");
+            if (outputCount <= 0) throw new ArgumentOutOfRangeException(nameof(outputCount), "The network must have at least one output.");
+
             _lrpOut = lrpOut;
             _lrpIn = lrpIn;
 
@@ -183,20 +188,20 @@ namespace BackPropagation.Core
             // Input-to-hidden weights
             for (int i = 0; i < _ineuron.Length; ++i)
                 for (int h = 0; h < _hneuron.Length; ++h)
-                    sw.WriteLine(_ineuron[i].GetWeight(h).ToString("R"));
+                    sw.WriteLine(_ineuron[i].GetWeight(h).ToString("R", CultureInfo.InvariantCulture));
 
             // Hidden-to-output weights
             for (int h = 0; h < _hneuron.Length; ++h)
                 for (int o = 0; o < _oneuron.Length; ++o)
-                    sw.WriteLine(_hneuron[h].GetWeight(o).ToString("R"));
+                    sw.WriteLine(_hneuron[h].GetWeight(o).ToString("R", CultureInfo.InvariantCulture));
 
             // Hidden biases
             for (int h = 0; h < _hneuron.Length; ++h)
-                sw.WriteLine(_hneuron[h].Bias.ToString("R"));
+                sw.WriteLine(_hneuron[h].Bias.ToString("R", CultureInfo.InvariantCulture));
 
             // Output biases
             for (int o = 0; o < _oneuron.Length; ++o)
-                sw.WriteLine(_oneuron[o].Bias.ToString("R"));
+                sw.WriteLine(_oneuron[o].Bias.ToString("R", CultureInfo.InvariantCulture));
         }
 
         /// <summary>
@@ -214,7 +219,7 @@ namespace BackPropagation.Core
                 for (int h = 0; h < _hneuron.Length; ++h)
                 {
                     if (line == null) throw new InvalidDataException("Unexpected EOF while reading input weights.");
-                    _ineuron[i].SetWeight(h, double.Parse(line));
+                    _ineuron[i].SetWeight(h, double.Parse(line, CultureInfo.InvariantCulture));
                     line = sr.ReadLine();
                 }
 
@@ -222,21 +227,21 @@ namespace BackPropagation.Core
                 for (int o = 0; o < _oneuron.Length; ++o)
                 {
                     if (line == null) throw new InvalidDataException("Unexpected EOF while reading hidden weights.");
-                    _hneuron[h].SetWeight(o, double.Parse(line));
+                    _hneuron[h].SetWeight(o, double.Parse(line, CultureInfo.InvariantCulture));
                     line = sr.ReadLine();
                 }
 
             for (int h = 0; h < _hneuron.Length; ++h)
             {
                 if (line == null) throw new InvalidDataException("Unexpected EOF while reading hidden biases.");
-                _hneuron[h].SetBias(double.Parse(line));
+                _hneuron[h].SetBias(double.Parse(line, CultureInfo.InvariantCulture));
                 line = sr.ReadLine();
             }
 
             for (int o = 0; o < _oneuron.Length; ++o)
             {
                 if (line == null) throw new InvalidDataException("Unexpected EOF while reading output biases.");
-                _oneuron[o].SetBias(double.Parse(line));
+                _oneuron[o].SetBias(double.Parse(line, CultureInfo.InvariantCulture));
                 line = sr.ReadLine();
             }
         }

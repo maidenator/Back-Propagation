@@ -68,6 +68,9 @@ namespace BackPropagation.Core
         /// <returns>Array of normalized probabilities summing to 1.0.</returns>
         public static double[] Softmax(double[] oSums)
         {
+            if (oSums.Length == 0)
+                return Array.Empty<double>();
+
             // Find max for numerical stability (preventing Math.Exp overflow)
             double max = oSums[0];
             for (int i = 1; i < oSums.Length; ++i)

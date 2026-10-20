@@ -1,0 +1,54 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        os:
+          - ubuntu-latest
+          - windows-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore BackPropagation.sln
+
+      - name: Build
+        run: dotnet build BackPropagation.sln --configuration Release --no-restore --nologo
+
+      - name: CLI smoke test - topology
+        if: runner.os == 'Linux'
+        run: dotnet run --project src/BackPropagation.csproj --configuration Release --no-build -- --visualize
+
+      - name: CLI smoke test - math trace
+        if: runner.os == 'Linux'
+        run: dotnet run --project src/BackPropagation.csproj --configuration Release --no-build -- --trace
+
+      - name: CLI smoke test - synthetic benchmark
+        if: runner.os == 'Linux'
+        run: dotnet run --project src/BackPropagation.csproj --configuration Release --no-build -- --synthetic

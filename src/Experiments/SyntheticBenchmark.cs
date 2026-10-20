@@ -119,10 +119,7 @@ namespace BackPropagation.Experiments
         private static string GenerateMarkdownReport(string title, MatrixNeuralNet nn, double trainAcc, double testAcc, 
             int trainCount, int testCount, LossFunction lossFunc, double weightDecay)
         {
-            Directory.CreateDirectory("reports");
-            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-            string fileName = $"cs345_run_{timestamp}.md";
-            string fullPath = Path.Combine("reports", fileName);
+            string fullPath = MarkdownReporter.CreateReportPath("cs345_run");
 
             var sb = new StringBuilder();
             sb.AppendLine($"# Neural Network Training Report: {title}");

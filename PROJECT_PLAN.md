@@ -2,7 +2,7 @@
 
 ## 1. Executive Summary & Core Philosophy
 
-This project is a 100% **C#** implementation of an educational **Backpropagation Artificial Neural Network** engineered from first principles, mirroring the reference materials ([`Back-Prop`](file:///home/gab/Projects/Back-Propagation/materials/Back-Prop), [`BackPropProgram for CS345 IS 1.cs`](file:///home/gab/Projects/Back-Propagation/materials/BackPropProgram%20for%20CS345%20IS%201.cs), and [Xylphy's reference repository](https://github.com/Xylphy/Backpropagation-Neural-Networks/)).
+This project is a 100% **C#** implementation of an educational **Backpropagation Artificial Neural Network** engineered from first principles, drawing on Dr. James McCaffrey's CS345 article and reference program (kept locally under `materials/`), and on [Xylphy's reference repository](https://github.com/Xylphy/Backpropagation-Neural-Networks/). The course materials and the cloned reference repository are intentionally excluded from the published repository; see [README.md](README.md) for details.
 
 The system is governed by two strict tenets:
 1. **Absolute Primitiveness**: Zero external packages or machine learning frameworks (no ML.NET, no TorchSharp, no third-party linear algebra libraries). The engine relies exclusively on core C# primitive types (`double[]`, `double[][]`), standard loops, and standard `System.Math`. Every forward pass dot product, activation function, error derivative, gradient propagation, and momentum update is fully explicit and observable.
@@ -35,28 +35,32 @@ The system is governed by two strict tenets:
 
 ```
 Back-Propagation/
-├── .gitignore                          # Ignores materials/, references/, bin/, obj/
+├── .github/workflows/ci.yml            # Cross-platform build and CLI smoke tests
+├── .editorconfig                       # C# formatting conventions
+├── .gitattributes                      # Line-ending normalization
+├── .gitignore                          # Ignores materials/, references/, reports/, bin/, obj/
+├── LICENSE                             # MIT license
 ├── PROJECT_PLAN.md                     # This architectural document
 ├── README.md                           # Documentation, mathematical derivations, quickstart
-├── materials/                          # [GITIGNORED] Original CS345 PDF & C# files
-├── references/                         # [GITIGNORED] Cloned Xylphy repository
-├── reports/                            # Auto-generated Markdown training reports
+├── materials/                          # [LOCAL ONLY / GITIGNORED] Original CS345 PDF & C# files
+├── references/                         # [LOCAL ONLY / GITIGNORED] Cloned Xylphy repository
+├── reports/                            # [GENERATED / GITIGNORED] Markdown training reports
 │
 ├── BackPropagation.sln                 # Visual Studio / .NET Solution
 │
 └── src/
-    ├── BackPropagation.csproj          # Standard C# Project file (.NET 8.0)
+    ├── BackPropagation.csproj          # .NET 8; net8.0-windows on Windows, net8.0 elsewhere
     │
     ├── Core/                           # Primitive Neural Network Engine
     │   ├── INeuron.cs                  # Input neuron representation (Xylphy model)
     │   ├── HNeuron.cs                  # Hidden neuron with error backprop & bias
     │   ├── ONeuron.cs                  # Output neuron with delta signal computation
-    │   ├── NeuralNet.cs                # High-level network coordinator
+    │   ├── NeuralNet.cs                # High-level object-oriented network coordinator
     │   ├── MatrixNeuralNet.cs          # Primitive matrix/array engine (CS345 McCaffrey model)
     │   └── Activations.cs              # Sigmoid, Tanh, Softmax and their derivatives
     │
     ├── Data/                           # Datasets & Generation
-    │   ├── LogicGateDataset.cs         # 16-state 4-input boolean truth tables (AND, XOR, etc.)
+    │   ├── LogicGateDataset.cs         # 16-state 4-input boolean truth tables (AND, parity)
     │   └── SyntheticDataset.cs         # CS345 4-5-3 synthetic classification dataset generator
     │
     ├── SelfDoc/                        # Self-Documentation Subsystem
@@ -65,11 +69,14 @@ Back-Propagation/
     │   └── MarkdownReporter.cs         # Generates GitHub-flavored markdown run reports
     │
     ├── Experiments/                    # Core Tasks & Benchmarks
-    │   ├── LogicGateExperiment.cs      # Train-until-fit on 16-row truth table
+    │   ├── LogicGateExperiment.cs      # Train-until-fit on the 16-row truth table
     │   ├── HiddenOptimizer.cs          # Finds minimum hidden neurons needed to converge
-    │   └── SyntheticBenchmark.cs       # 4-5-3 multi-class classifier demo (CS345)
+    │   └── SyntheticBenchmark.cs       # 4-5-3 multi-class classifier demo (MSE, CE, weight decay)
     │
-    └── Program.cs                      # Interactive Console CLI & Menu
+    ├── GUI/                            # Windows-only Desktop Interface
+    │   └── MainForm.cs                 # Windows Forms dashboard
+    │
+    └── Program.cs                      # CLI/menu entry point; launches GUI on Windows by default
 ```
 
 ---
@@ -100,17 +107,25 @@ $$w_{jk}^{(ho)} \leftarrow w_{jk}^{(ho)} + \Delta w_{jk}^{(ho)}$$
 $$\Delta b_k^{(o)} = \eta \cdot \delta_k \cdot 1.0 + \alpha \cdot \Delta b_k^{(o, \text{prev})}$$
 $$b_k^{(o)} \leftarrow b_k^{(o)} + \Delta b_k^{(o)}$$
 
+### 4.4 Implemented Extensions
+
+- **Cross-entropy loss** with Softmax output: the output signal simplifies to $\delta_k = t_k - y_k$.
+- **L2 weight decay**: the gradient used for weight updates becomes $\text{grad} - \lambda w$; biases are not regularized.
+- **Windows Forms GUI**: generates data, trains, predicts, traces, and exports reports.
+- **Packaging hygiene**: OS-conditional target framework, `.gitignore`, `.gitattributes`, `.editorconfig`, MIT license, and CI builds on Linux and Windows.
+
 ---
 
 ## 5. Self-Documentation Subsystem
 
 1. **Step-by-Step Math Tracer (`MathTracer.cs`)**:
    - Traces arithmetic calculations with actual values for any selected sample.
-   - Outputs intermediate sums, activation results, target errors, local gradients ($\delta$), and weight updates.
+   - Outputs intermediate sums, activation results, target errors, local gradients ($\delta$), and the weight/bias update equations.
 
 2. **Automated Markdown Reporter (`MarkdownReporter.cs`)**:
-   - Generates formatted reports in `reports/run_<timestamp>.md` upon training completion.
+   - Generates formatted reports in `reports/cs345_run_<timestamp>.md` and `reports/run_<timestamp>.md` upon training completion.
    - Includes hyperparameter summary, epoch loss table, weight matrices, and truth table verification table (comparing expected vs. computed output for all 16 states).
+   - Filenames include milliseconds and a collision suffix, so concurrent runs never overwrite each other.
 
 3. **ASCII Network Visualizer (`AsciiVisualizer.cs`)**:
    - Displays a dynamic ASCII diagram in the console showing input, hidden, and output layers with their connections.
@@ -125,3 +140,5 @@ $$b_k^{(o)} \leftarrow b_k^{(o)} + \Delta b_k^{(o)}$$
 * **Milestone 4**: Implement the 16-row Truth Table Logic Gate and Hidden Neuron Optimizer.
 * **Milestone 5**: Implement the CS345 4-5-3 Synthetic Classifier benchmark.
 * **Milestone 6**: Provide interactive CLI menu and self-contained README documentation.
+* **Milestone 7**: Add Cross-Entropy Loss and L2 Weight Decay extensions, plus the Windows Forms GUI.
+* **Milestone 8**: Harden the repository for publication: license, CI, line-ending/formatting metadata, and generated-output cleanup.
