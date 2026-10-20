@@ -1,0 +1,81 @@
+using System;
+using BackPropagation.Core;
+
+namespace BackPropagation.Data
+{
+    /// <summary>
+    /// Generates and partitions the synthetic classification dataset from Dr. James McCaffrey's CS345 specification.
+    /// Creates reproducible artificial data using a seeded generator neural network with 1-of-N one-hot encoded targets.
+    /// </summary>
+    public static class SyntheticDataset
+    {
+        /// <summary>
+        /// Generates artificial dataset where inputs are in [-10.0, 10.0] and targets are 1-of-N encoded.
+        /// </summary>
+        public static double[][] MakeAllData(int numInput, int numHidden, int numOutput, int numRows, int seed)
+        {
+            var rnd = new Random(seed);
+            int numWeights = (numInput * numHidden) + numHidden + (numHidden * numOutput) + numOutput;
+            double[] weights = new double[numWeights];
+            for (int i = 0; i < numWeights; ++i)
+                weights[i] = (20.0 * rnd.NextDouble()) - 10.0;
+
+            var gnn = new MatrixNeuralNet(numInput, numHidden, numOutput, seed);
+            gnn.SetWeights(weights);
+
+            double[][] result = new double[numRows][];
+            for (int r = 0; r < numRows; ++r)
+            {
+                result[r] = new double[numInput + numOutput];
+                double[] inputs = new double[numInput];
+                for (int i = 0; i < numInput; ++i)
+                    inputs[i] = (20.0 * rnd.NextDouble()) - 10.0;
+
+                double[] outputs = gnn.ComputeOutputs(inputs);
+
+                // Convert to 1-of-N encoding
+                int maxIndex = MatrixNeuralNet.MaxIndex(outputs);
+                for (int i = 0; i < numInput; ++i)
+                    result[r][i] = inputs[i];
+
+                for (int k = 0; k < numOutput; ++k)
+                    result[r][numInput + k] = (k == maxIndex) ? 1.0 : 0.0;
+            }
+
+            return result;
+        }
+
+        /// <summary>
+        /// Splits dataset into training and testing partitions using Fisher-Yates scrambling.
+        /// </summary>
+        public static void SplitTrainTest(double[][] allData, double trainPct, int seed,
+            out double[][] trainData, out double[][] testData)
+        {
+            var rnd = new Random(seed);
+            int totRows = allData.Length;
+            int numTrainRows = (int)(totRows * trainPct);
+            int numTestRows = totRows - numTrainRows;
+
+            trainData = new double[numTrainRows][];
+            testData = new double[numTestRows][];
+
+            double[][] copy = new double[totRows][];
+            for (int i = 0; i < totRows; ++i)
+                copy[i] = allData[i];
+
+            for (int i = 0; i < copy.Length; ++i)
+            {
+                int r = rnd.Next(i, copy.Length);
+                double[] tmp = copy[r];
+                copy[r] = copy[i];
+                copy[i] = tmp;
+            }
+
+            for (int i = 0; i < numTrainRows; ++i)
+                trainData[i] = copy[i];
+
+            for (int i = 0; i < numTestRows; ++i)
+                testData[i] = copy[i + numTrainRows];
+        }
+    }
+}
