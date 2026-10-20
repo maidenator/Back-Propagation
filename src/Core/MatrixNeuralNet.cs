@@ -2,10 +2,20 @@ using System;
 
 namespace BackPropagation.Core
 {
+    public enum LossFunction
+    {
+        MeanSquaredError,
+        CrossEntropy
+    }
+
     /// <summary>
     /// High-performance primitive matrix/array-based backpropagation neural network.
     /// Directly implements the mathematical specification and jagged-array architecture
-    /// from Dr. James McCaffrey's CS345 reference program with optional momentum and configurable activation functions.
+    /// from Dr. James McCaffrey's CS345 reference program.
+    /// 
+    /// Includes the two extensions described in the 'WHAT TO DO' section:
+    /// 1. Cross-Entropy Error (with Softmax output derivative simplification: δ_k = t_k - y_k)
+    /// 2. Weight Decay (L2 Regularization) to penalize large weights and prevent overfitting.
     /// </summary>
     public class MatrixNeuralNet
     {
@@ -141,7 +151,7 @@ namespace BackPropagation.Core
             for (int i = 0; i < _numInput; ++i)
                 _inputs[i] = xValues[i];
 
-            // 1. Hidden node weighted sums
+            // 1. Hidden node weighted sums: net_j = sum(x_i * w_ij) + b_j
             for (int j = 0; j < _numHidden; ++j)
             {
                 for (int i = 0; i < _numInput; ++i)
@@ -150,7 +160,7 @@ namespace BackPropagation.Core
                 _hOutputs[j] = Activations.HyperTan(hSums[j]);
             }
 
-            // 2. Output node weighted sums
+            // 2. Output node weighted sums: net_k = sum(h_j * w_jk) + b_k
             for (int k = 0; k < _numOutput; ++k)
             {
                 for (int j = 0; j < _numHidden; ++j)
@@ -158,7 +168,7 @@ namespace BackPropagation.Core
                 oSums[k] += _oBiases[k];
             }
 
-            // 3. Softmax normalized outputs
+            // 3. Softmax normalized outputs: y_k = exp(net_k) / sum(exp(net_j))
             double[] softOut = Activations.Softmax(oSums);
             Array.Copy(softOut, _outputs, softOut.Length);
 
@@ -168,9 +178,24 @@ namespace BackPropagation.Core
         }
 
         /// <summary>
-        /// Trains the model using stochastic online backpropagation with momentum.
+        /// Trains the model using stochastic online backpropagation with momentum,
+        /// configurable loss function (MSE vs Cross-Entropy), and optional L2 Weight Decay.
         /// </summary>
-        public double[] Train(double[][] trainData, int maxEpochs, double learnRate, double momentum, 
+        /// <param name="trainData">Training matrix [rows][numInput + numOutput].</param>
+        /// <param name="maxEpochs">Maximum training iterations.</param>
+        /// <param name="learnRate">Learning rate parameter η.</param>
+        /// <param name="momentum">Momentum rate parameter α.</param>
+        /// <param name="lossFunction">Loss function: MeanSquaredError or CrossEntropy.</param>
+        /// <param name="weightDecay">L2 regularization rate λ (0.0 means no regularization).</param>
+        /// <param name="epochCallback">Callback invoked with (epoch, currentLoss) at regular intervals.</param>
+        /// <returns>Serialized array of best learned weights and biases.</returns>
+        public double[] Train(
+            double[][] trainData, 
+            int maxEpochs, 
+            double learnRate, 
+            double momentum, 
+            LossFunction lossFunction = LossFunction.MeanSquaredError,
+            double weightDecay = 0.0,
             Action<int, double>? epochCallback = null)
         {
             double[][] hoGrads = MakeMatrix(_numHidden, _numOutput, 0.0);
@@ -201,8 +226,10 @@ namespace BackPropagation.Core
 
                 if (epoch % errInterval == 0 || epoch == maxEpochs)
                 {
-                    double trainErr = MeanSquaredError(trainData);
-                    epochCallback?.Invoke(epoch, trainErr);
+                    double currentLoss = (lossFunction == LossFunction.CrossEntropy)
+                        ? CrossEntropyError(trainData)
+                        : MeanSquaredError(trainData);
+                    epochCallback?.Invoke(epoch, currentLoss);
                 }
 
                 Shuffle(sequence);
@@ -215,12 +242,26 @@ namespace BackPropagation.Core
 
                     ComputeOutputs(xValues);
 
-                    // 1. Output error gradient signals (Softmax: δ_k = (t_k - y_k) * y_k * (1 - y_k))
-                    for (int k = 0; k < _numOutput; ++k)
+                    // 1. Output error gradient signals
+                    if (lossFunction == LossFunction.CrossEntropy)
                     {
-                        double errorSignal = tValues[k] - _outputs[k];
-                        double derivative = (1.0 - _outputs[k]) * _outputs[k];
-                        oSignals[k] = errorSignal * derivative;
+                        // Cross-Entropy with Softmax:
+                        // dE/dz_k = y_k - t_k, so error gradient signal is simply (t_k - y_k)
+                        for (int k = 0; k < _numOutput; ++k)
+                        {
+                            oSignals[k] = tValues[k] - _outputs[k];
+                        }
+                    }
+                    else
+                    {
+                        // Mean Squared Error (MSE) with Softmax (Figure 3 in Back-Prop PDF):
+                        // δ_k = (t_k - y_k) * y_k * (1 - y_k)
+                        for (int k = 0; k < _numOutput; ++k)
+                        {
+                            double errorSignal = tValues[k] - _outputs[k];
+                            double derivative = (1.0 - _outputs[k]) * _outputs[k];
+                            oSignals[k] = errorSignal * derivative;
+                        }
                     }
 
                     // 2. Hidden-to-output gradients
@@ -249,21 +290,26 @@ namespace BackPropagation.Core
                     for (int j = 0; j < _numHidden; ++j)
                         hbGrads[j] = hSignals[j] * 1.0;
 
-                    // == Update weights and biases with momentum ==
+                    // == Update weights and biases with momentum & optional weight decay ==
 
                     // Update input-to-hidden weights
                     for (int i = 0; i < _numInput; ++i)
                     {
                         for (int j = 0; j < _numHidden; ++j)
                         {
-                            double delta = ihGrads[i][j] * learnRate;
+                            // Weight decay: penalize weight magnitude (grad - decay * w)
+                            double grad = ihGrads[i][j];
+                            if (weightDecay > 0.0)
+                                grad -= weightDecay * _ihWeights[i][j];
+
+                            double delta = grad * learnRate;
                             _ihWeights[i][j] += delta;
                             _ihWeights[i][j] += ihPrevWeightsDelta[i][j] * momentum;
                             ihPrevWeightsDelta[i][j] = delta;
                         }
                     }
 
-                    // Update hidden biases
+                    // Update hidden biases (biases are not decayed)
                     for (int j = 0; j < _numHidden; ++j)
                     {
                         double delta = hbGrads[j] * learnRate;
@@ -277,7 +323,11 @@ namespace BackPropagation.Core
                     {
                         for (int k = 0; k < _numOutput; ++k)
                         {
-                            double delta = hoGrads[j][k] * learnRate;
+                            double grad = hoGrads[j][k];
+                            if (weightDecay > 0.0)
+                                grad -= weightDecay * _hoWeights[j][k];
+
+                            double delta = grad * learnRate;
                             _hoWeights[j][k] += delta;
                             _hoWeights[j][k] += hoPrevWeightsDelta[j][k] * momentum;
                             hoPrevWeightsDelta[j][k] = delta;
@@ -310,6 +360,10 @@ namespace BackPropagation.Core
             }
         }
 
+        /// <summary>
+        /// Calculates Mean Squared Error across a dataset:
+        /// MSE = (1 / N) * sum_i sum_k (t_ik - y_ik)^2
+        /// </summary>
         public double MeanSquaredError(double[][] dataset)
         {
             double sumSquaredError = 0.0;
@@ -329,6 +383,35 @@ namespace BackPropagation.Core
                 }
             }
             return sumSquaredError / dataset.Length;
+        }
+
+        /// <summary>
+        /// Calculates Cross-Entropy error across a dataset (from 'WHAT TO DO' section):
+        /// CE = - (1 / N) * sum_i sum_k t_ik * ln(y_ik + 1e-15)
+        /// </summary>
+        public double CrossEntropyError(double[][] dataset)
+        {
+            double sumCrossEntropy = 0.0;
+            double[] xValues = new double[_numInput];
+            double[] tValues = new double[_numOutput];
+
+            for (int i = 0; i < dataset.Length; ++i)
+            {
+                Array.Copy(dataset[i], 0, xValues, 0, _numInput);
+                Array.Copy(dataset[i], _numInput, tValues, 0, _numOutput);
+                double[] yValues = ComputeOutputs(xValues);
+
+                for (int k = 0; k < _numOutput; ++k)
+                {
+                    if (tValues[k] > 0.0)
+                    {
+                        // Small epsilon to guard against ln(0)
+                        double prob = Math.Max(1e-15, yValues[k]);
+                        sumCrossEntropy += -1.0 * tValues[k] * Math.Log(prob);
+                    }
+                }
+            }
+            return sumCrossEntropy / dataset.Length;
         }
 
         public double Accuracy(double[][] dataset)
