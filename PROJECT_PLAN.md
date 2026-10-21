@@ -23,11 +23,6 @@ src/
 │   ├── SyntheticBenchmark.cs
 │   ├── LogicGateExperiment.cs
 │   └── HiddenOptimizer.cs
-├── SelfDoc/
-│   ├── MathTracer.cs
-│   ├── AsciiVisualizer.cs
-│   ├── ConsoleDisplay.cs
-│   └── MarkdownReporter.cs
 └── GUI/MainForm.cs       # Windows Forms dashboard (Windows only)
 ```
 
@@ -50,18 +45,11 @@ src/
 | Run | Purpose |
 |---|---|
 | Comparison runner | Trains MSE, cross-entropy, and cross-entropy + decay on one shared dataset, then prints the comparison table (loss, weight norm, train/test accuracy). |
-| Synthetic benchmark | One configuration, verbose epoch log, markdown report, sample prediction. |
+| Synthetic benchmark | One configuration, verbose epoch log, sample prediction. |
 | Logic gate experiment | Trains a 4-input network until all 16 truth-table rows are classified correctly. |
 | Hidden optimizer | Sweeps hidden neuron counts and reports the fastest converging size. |
 
-## 5. Self-documentation
-
-- `MathTracer` prints the actual arithmetic of one forward and backward pass.
-- `AsciiVisualizer` renders the topology and parameter count.
-- `MarkdownReporter` writes run reports to `reports/` (gitignored).
-- `ConsoleDisplay` prints matrices and vectors in the layout used by the reference program.
-
-## 6. Packaging
+## 5. Packaging
 
 - `.csproj` picks `net8.0-windows` with WinForms on Windows and plain `net8.0` elsewhere, so `dotnet run` works on every platform.
 - CI builds on Linux and Windows and smoke-tests the CLI.

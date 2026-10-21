@@ -1,7 +1,6 @@
 using System;
 using BackPropagation.Core;
 using BackPropagation.Data;
-using BackPropagation.SelfDoc;
 
 namespace BackPropagation.Experiments
 {
@@ -56,9 +55,9 @@ namespace BackPropagation.Experiments
             Console.WriteLine("Done\n");
 
             Console.WriteLine("Training data:");
-            ConsoleDisplay.ShowMatrix(trainData, 4, 2, true);
+            SyntheticDataset.ShowMatrix(trainData, 4, 2, true);
             Console.WriteLine("Test data:");
-            ConsoleDisplay.ShowMatrix(testData, 4, 2, true);
+            SyntheticDataset.ShowMatrix(testData, 4, 2, true);
 
             RunResult baseline = Train("EXPERIMENT 1: Baseline (Mean Squared Error, No Decay)",
                 "1. Baseline (MSE, No Decay)", "MSE", LossFunction.MeanSquaredError, 0.0,
@@ -95,7 +94,7 @@ namespace BackPropagation.Experiments
                 (epoch, loss) => Console.WriteLine($"epoch = {epoch}  error = {loss:F4}"));
             Console.WriteLine("Done");
             Console.WriteLine("\nFinal neural network model weights and biases:\n");
-            ConsoleDisplay.ShowVector(weights, 2, 10, true);
+            SyntheticDataset.ShowVector(weights, 2, 10, true);
 
             var result = new RunResult
             {

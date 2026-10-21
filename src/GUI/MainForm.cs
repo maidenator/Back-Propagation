@@ -14,7 +14,7 @@ namespace BackPropagation.GUI
     /// Windows Forms user interface replicating and extending the CS345 Backpropagation assignment.
     /// Provides controls for generating synthetic data, configuring hyperparameters,
     /// selecting between Mean Squared Error and Cross-Entropy, applying Weight Decay (L2 regularization),
-    /// observing real-time training progress, making predictions, and exporting self-documenting reports.
+    /// observing real-time training progress, making predictions, and exporting a training report.
     /// </summary>
     public class MainForm : Form
     {
@@ -173,7 +173,7 @@ namespace BackPropagation.GUI
             btnGenerateData = new Button { Text = "1. Generate Data (1000)", Location = new Point(15, 25), Size = new Size(180, 36) };
             btnCreateNet = new Button { Text = "2. Create 4-5-3 Network", Location = new Point(210, 25), Size = new Size(180, 36) };
             btnTrain = new Button { Text = "3. Train Model (Backprop)", Location = new Point(15, 68), Size = new Size(180, 38), BackColor = Color.FromArgb(41, 128, 185), ForeColor = Color.White };
-            btnMathTrace = new Button { Text = "4. Trace Math (Self-Doc)", Location = new Point(210, 68), Size = new Size(180, 38) };
+            btnMathTrace = new Button { Text = "4. Trace Math", Location = new Point(210, 68), Size = new Size(180, 38) };
             btnExportReport = new Button { Text = "5. Export Markdown Report", Location = new Point(15, 112), Size = new Size(375, 34) };
 
             btnGenerateData.Click += BtnGenerateData_Click;
@@ -550,7 +550,7 @@ namespace BackPropagation.GUI
                 sb.AppendLine("\n```");
 
                 File.WriteAllText(path, sb.ToString());
-                Log($"\n[SELF-DOC] Report successfully saved to: {path}");
+                Log($"\n[REPORT] Report successfully saved to: {path}");
                 MessageBox.Show($"Report exported successfully to:\n{path}", "Export Complete", MessageBoxButtons.OK, MessageBoxIcon.Information);
             }
             catch (Exception ex)

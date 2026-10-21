@@ -5,7 +5,6 @@ using System.Linq;
 using BackPropagation.Core;
 using BackPropagation.Data;
 using BackPropagation.Experiments;
-using BackPropagation.SelfDoc;
 #if NET8_0_WINDOWS || WINDOWS
 using System.Windows.Forms;
 using BackPropagation.GUI;
@@ -125,15 +124,7 @@ namespace BackPropagation
                 case "-o":
                     HiddenOptimizer.RunOptimization();
                     break;
-                case "--trace":
-                case "-t":
-                    var net = new NeuralNet(4, 5, 1);
-                    MathTracer.TraceSample(net, new double[] { 1, 1, 1, 0 }, new double[] { 0 });
-                    break;
-                case "--visualize":
-                case "-v":
-                    AsciiVisualizer.RenderTopology(4, 5, 3);
-                    break;
+
                 case "--help":
                 case "-h":
                 case "-?":
@@ -161,8 +152,6 @@ namespace BackPropagation
             Console.WriteLine("  --weight-decay, -wd  Run CS345 benchmark using L2 weight decay (lambda = 0.001)");
             Console.WriteLine("  --logic, -l          Run 4-input boolean logic gate experiment");
             Console.WriteLine("  --optimize, -o       Run hidden neuron count optimization benchmark");
-            Console.WriteLine("  --trace, -t          Run single-sample mathematical trace");
-            Console.WriteLine("  --visualize, -v      Render ASCII network topology");
             Console.WriteLine("  --epochs, -e N       Override the number of training epochs (default 1000)");
             Console.WriteLine("  --help, -h           Show this help text");
         }
@@ -178,14 +167,12 @@ namespace BackPropagation
                 Console.WriteLine("  [2] Run CS345 4-5-3 Benchmark: Standard Mean Squared Error (MSE)");
                 Console.WriteLine("  [3] Run CS345 4-5-3 Benchmark: Cross-Entropy Loss (WHAT TO DO)");
                 Console.WriteLine("  [4] Run CS345 4-5-3 Benchmark: Weight Decay / L2 Regularization (WHAT TO DO)");
-                Console.WriteLine("  [5] Mathematical Step-by-Step Calculation Trace (--trace)");
-                Console.WriteLine("  [6] Classify Custom Prediction Input (e.g. 1.0, 2.0, 3.0, 4.0)");
-                Console.WriteLine("  [7] Display ASCII Network Topology Diagram");
-                Console.WriteLine("  [8] Run 4-Input Logic Gate Experiment (Train-Until-Fit)");
-                Console.WriteLine("  [9] Run Hidden Neuron Optimization Benchmark");
+                Console.WriteLine("  [5] Classify Custom Prediction Input (e.g. 1.0, 2.0, 3.0, 4.0)");
+                Console.WriteLine("  [6] Run 4-Input Logic Gate Experiment (Train-Until-Fit)");
+                Console.WriteLine("  [7] Run Hidden Neuron Optimization Benchmark");
                 Console.WriteLine("  [0] Exit");
                 Console.WriteLine("================================================================================");
-                Console.Write("Select an option (0-9): ");
+                Console.Write("Select an option (0-7): ");
 
                 string? choice = Console.ReadLine()?.Trim();
                 if (choice is null)
@@ -211,27 +198,22 @@ namespace BackPropagation
                     case "4":
                         SyntheticBenchmark.RunWeightDecayDemo(epochs);
                         break;
+
                     case "5":
-                        var traceNet = new NeuralNet(4, 4, 1);
-                        MathTracer.TraceSample(traceNet, new double[] { 1, 1, 1, 0 }, new double[] { 0 });
-                        break;
-                    case "6":
                         RunInteractivePrediction();
                         break;
-                    case "7":
-                        AsciiVisualizer.RenderTopology(4, 5, 3);
-                        break;
-                    case "8":
+
+                    case "6":
                         LogicGateExperiment.RunTrainUntilFit();
                         break;
-                    case "9":
+                    case "7":
                         HiddenOptimizer.RunOptimization();
                         break;
                     case "0":
                         Console.WriteLine("Exiting. Thank you!");
                         return;
                     default:
-                        Console.WriteLine("Invalid selection. Please choose an option between 0 and 9.");
+                        Console.WriteLine("Invalid selection. Please choose an option between 0 and 7.");
                         break;
                 }
 

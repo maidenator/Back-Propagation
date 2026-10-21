@@ -1,7 +1,6 @@
 using System;
 using BackPropagation.Core;
 using BackPropagation.Data;
-using BackPropagation.SelfDoc;
 
 namespace BackPropagation.Experiments
 {
@@ -37,7 +36,6 @@ namespace BackPropagation.Experiments
             double[][] dataset = LogicGateDataset.Get4InputAndDataset();
             var net = new NeuralNet(4, hiddenNeurons, 1, lrpOut: 0.2, lrpIn: 0.15);
 
-            AsciiVisualizer.RenderTopology(4, hiddenNeurons, 1);
             Console.WriteLine("Initial truth table check before training:");
             PrintVerificationTable(net, dataset);
 
@@ -79,15 +77,7 @@ namespace BackPropagation.Experiments
             Console.WriteLine("\nFinal truth table verification after training:");
             PrintVerificationTable(net, dataset);
 
-            AsciiVisualizer.DisplayWeightSummary(net);
 
-            // Generate self-documenting Markdown report
-            string reportPath = MarkdownReporter.GenerateLogicGateReport(net, dataset, epoch, converged);
-            Console.WriteLine($"\n[SELF-DOC] Markdown run report generated automatically at:\n  --> {reportPath}");
-
-            // Perform single-sample mathematical trace for demonstration
-            Console.WriteLine("\n[SELF-DOC] Tracing single sample math calculation for input (1, 1, 1, 1) -> Target: 1.0:");
-            MathTracer.TraceSample(net, new double[] { 1, 1, 1, 1 }, new double[] { 1 });
         }
 
         public static void PrintVerificationTable(NeuralNet net, double[][] dataset)

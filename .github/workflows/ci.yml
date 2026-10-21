@@ -41,13 +41,6 @@ jobs:
       - name: Build
         run: dotnet build BackPropagation.sln --configuration Release --no-restore --nologo
 
-      - name: CLI smoke test - topology
-        if: runner.os == 'Linux'
-        run: dotnet run --project src/BackPropagation.csproj --configuration Release --no-build -- --visualize
-
-      - name: CLI smoke test - math trace
-        if: runner.os == 'Linux'
-        run: dotnet run --project src/BackPropagation.csproj --configuration Release --no-build -- --trace
 
       - name: CLI smoke test - single benchmark
         if: runner.os == 'Linux'
