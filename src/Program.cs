@@ -1,6 +1,7 @@
 using System;
+using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
-using System.Runtime.InteropServices;
 using BackPropagation.Core;
 using BackPropagation.Data;
 using BackPropagation.Experiments;
@@ -14,10 +15,19 @@ namespace BackPropagation
 {
     public class Program
     {
+        private const int DefaultEpochs = 1000;
+
         [STAThread]
         public static void Main(string[] args)
         {
-            Console.OutputEncoding = System.Text.Encoding.UTF8;
+            try
+            {
+                Console.OutputEncoding = System.Text.Encoding.UTF8;
+            }
+            catch (IOException)
+            {
+                // Redirected output without a console handle (for example CI pipelines).
+            }
 
             if (args.Contains("--help") || args.Contains("-h") || args.Contains("-?"))
             {
@@ -25,12 +35,14 @@ namespace BackPropagation
                 return;
             }
 
-            bool forceCli = args.Contains("--cli") || args.Contains("-c");
-            bool isWindows = RuntimeInformation.IsOSPlatform(OSPlatform.Windows);
+            int epochs = ParseEpochs(args, out string[] options);
+
+            bool forceCli = options.Contains("--cli") || options.Contains("-c");
+            bool wantsMenu = options.Contains("--menu") || options.Contains("-m");
+            bool wantsComparison = options.Contains("--compare") || options.Contains("--all") || options.Contains("-a");
 
 #if NET8_0_WINDOWS || WINDOWS
-            // If running on Windows and not explicitly in CLI mode, launch the Windows Forms GUI
-            if (isWindows && !forceCli && args.Length == 0)
+            if (options.Contains("--gui") || options.Contains("-g"))
             {
                 ApplicationConfiguration.Initialize();
                 Application.Run(new MainForm());
@@ -38,17 +50,50 @@ namespace BackPropagation
             }
 #endif
 
-            if (args.Length > 0 && !forceCli)
+            if (wantsMenu)
             {
-                HandleCommandLineArgs(args);
+                RunInteractiveMenu(epochs);
                 return;
             }
 
-            // Interactive terminal interface (works everywhere, including Linux)
-            RunInteractiveMenu();
+            // Default run: train all three configurations and print the comparison table.
+            if (wantsComparison || forceCli || options.Length == 0)
+            {
+                ComparisonRunner.RunComparison(epochs);
+                return;
+            }
+
+            HandleCommandLineArgs(options, epochs);
         }
 
-        private static void HandleCommandLineArgs(string[] args)
+        /// <summary>
+        /// Extracts an optional --epochs N override and returns the remaining arguments.
+        /// </summary>
+        private static int ParseEpochs(string[] args, out string[] remaining)
+        {
+            int epochs = DefaultEpochs;
+            var kept = new List<string>();
+
+            for (int i = 0; i < args.Length; ++i)
+            {
+                bool isEpochFlag = (args[i] == "--epochs" || args[i] == "-e");
+                if (isEpochFlag && i + 1 < args.Length &&
+                    int.TryParse(args[i + 1], NumberStyles.Integer, CultureInfo.InvariantCulture, out int value) &&
+                    value > 0)
+                {
+                    epochs = value;
+                    ++i;
+                    continue;
+                }
+
+                kept.Add(args[i]);
+            }
+
+            remaining = kept.ToArray();
+            return epochs;
+        }
+
+        private static void HandleCommandLineArgs(string[] args, int epochs)
         {
             string flag = args[0].ToLowerInvariant();
             switch (flag)
@@ -62,15 +107,15 @@ namespace BackPropagation
 #endif
                 case "--synthetic":
                 case "-s":
-                    SyntheticBenchmark.RunDemo();
+                    SyntheticBenchmark.RunDemo(epochs);
                     break;
                 case "--cross-entropy":
                 case "-ce":
-                    SyntheticBenchmark.RunCrossEntropyDemo();
+                    SyntheticBenchmark.RunCrossEntropyDemo(epochs);
                     break;
                 case "--weight-decay":
                 case "-wd":
-                    SyntheticBenchmark.RunWeightDecayDemo();
+                    SyntheticBenchmark.RunWeightDecayDemo(epochs);
                     break;
                 case "--logic":
                 case "-l":
@@ -103,41 +148,44 @@ namespace BackPropagation
 
         private static void PrintHelp()
         {
-            Console.WriteLine("Usage: dotnet run --project src/BackPropagation.csproj [option]");
-            Console.WriteLine("       dotnet run --project src/BackPropagation.csproj -- [option]");
+            Console.WriteLine("Usage: dotnet run --project src/BackPropagation.csproj -- [option] [--epochs N]");
+            Console.WriteLine();
             Console.WriteLine("Options:");
+            Console.WriteLine("  --compare, -a        Train all three configurations and print the comparison table (default)");
+            Console.WriteLine("  --menu, -m           Launch the interactive terminal menu");
 #if NET8_0_WINDOWS || WINDOWS
-            Console.WriteLine("  --gui, -g             Launch Windows Forms graphical interface (Windows)");
-            Console.WriteLine("  --cli, -c             Force the interactive terminal menu on Windows");
+            Console.WriteLine("  --gui, -g            Launch the Windows Forms graphical interface (Windows only)");
 #endif
-            Console.WriteLine("  --synthetic, -s       Run CS345 4-5-3 benchmark (Standard MSE)");
-            Console.WriteLine("  --cross-entropy, -ce  Run CS345 with Cross-Entropy Loss (from 'WHAT TO DO')");
-            Console.WriteLine("  --weight-decay, -wd   Run CS345 with L2 Weight Decay (from 'WHAT TO DO')");
-            Console.WriteLine("  --logic, -l           Run 4-input boolean logic gate experiment");
-            Console.WriteLine("  --optimize, -o        Run hidden neuron count optimization benchmark");
-            Console.WriteLine("  --trace, -t           Run single-sample mathematical trace");
-            Console.WriteLine("  --visualize, -v       Render ASCII network topology");
-            Console.WriteLine("  --help, -h            Show this help text");
+            Console.WriteLine("  --synthetic, -s      Run CS345 4-5-3 benchmark (Standard MSE)");
+            Console.WriteLine("  --cross-entropy, -ce Run CS345 benchmark using Cross-Entropy loss");
+            Console.WriteLine("  --weight-decay, -wd  Run CS345 benchmark using L2 weight decay (lambda = 0.001)");
+            Console.WriteLine("  --logic, -l          Run 4-input boolean logic gate experiment");
+            Console.WriteLine("  --optimize, -o       Run hidden neuron count optimization benchmark");
+            Console.WriteLine("  --trace, -t          Run single-sample mathematical trace");
+            Console.WriteLine("  --visualize, -v      Render ASCII network topology");
+            Console.WriteLine("  --epochs, -e N       Override the number of training epochs (default 1000)");
+            Console.WriteLine("  --help, -h           Show this help text");
         }
 
-        private static void RunInteractiveMenu()
+        private static void RunInteractiveMenu(int epochs)
         {
             while (true)
             {
                 Console.WriteLine("================================================================================");
                 Console.WriteLine("       CS345 BACKPROPAGATION NEURAL NETWORK (WITH WHAT-TO-DO EXTENSIONS)        ");
                 Console.WriteLine("================================================================================");
-                Console.WriteLine("  [1] Run CS345 4-5-3 Benchmark: Standard Mean Squared Error (MSE)");
-                Console.WriteLine("  [2] Run CS345 4-5-3 Benchmark: Cross-Entropy Loss (WHAT TO DO)");
-                Console.WriteLine("  [3] Run CS345 4-5-3 Benchmark: Weight Decay / L2 Regularization (WHAT TO DO)");
-                Console.WriteLine("  [4] Mathematical Step-by-Step Calculation Trace (--trace)");
-                Console.WriteLine("  [5] Classify Custom Prediction Input (e.g. 1.0, 2.0, 3.0, 4.0)");
-                Console.WriteLine("  [6] Display ASCII Network Topology Diagram");
-                Console.WriteLine("  [7] Run 4-Input Logic Gate Experiment (Train-Until-Fit)");
-                Console.WriteLine("  [8] Run Hidden Neuron Optimization Benchmark");
-                Console.WriteLine("  [9] Exit");
+                Console.WriteLine("  [1] Run full comparison: MSE vs Cross-Entropy vs Weight Decay");
+                Console.WriteLine("  [2] Run CS345 4-5-3 Benchmark: Standard Mean Squared Error (MSE)");
+                Console.WriteLine("  [3] Run CS345 4-5-3 Benchmark: Cross-Entropy Loss (WHAT TO DO)");
+                Console.WriteLine("  [4] Run CS345 4-5-3 Benchmark: Weight Decay / L2 Regularization (WHAT TO DO)");
+                Console.WriteLine("  [5] Mathematical Step-by-Step Calculation Trace (--trace)");
+                Console.WriteLine("  [6] Classify Custom Prediction Input (e.g. 1.0, 2.0, 3.0, 4.0)");
+                Console.WriteLine("  [7] Display ASCII Network Topology Diagram");
+                Console.WriteLine("  [8] Run 4-Input Logic Gate Experiment (Train-Until-Fit)");
+                Console.WriteLine("  [9] Run Hidden Neuron Optimization Benchmark");
+                Console.WriteLine("  [0] Exit");
                 Console.WriteLine("================================================================================");
-                Console.Write("Select an option (1-9): ");
+                Console.Write("Select an option (0-9): ");
 
                 string? choice = Console.ReadLine()?.Trim();
                 if (choice is null)
@@ -152,35 +200,38 @@ namespace BackPropagation
                 switch (choice)
                 {
                     case "1":
-                        SyntheticBenchmark.RunDemo();
+                        ComparisonRunner.RunComparison(epochs);
                         break;
                     case "2":
-                        SyntheticBenchmark.RunCrossEntropyDemo();
+                        SyntheticBenchmark.RunDemo(epochs);
                         break;
                     case "3":
-                        SyntheticBenchmark.RunWeightDecayDemo();
+                        SyntheticBenchmark.RunCrossEntropyDemo(epochs);
                         break;
                     case "4":
+                        SyntheticBenchmark.RunWeightDecayDemo(epochs);
+                        break;
+                    case "5":
                         var traceNet = new NeuralNet(4, 4, 1);
                         MathTracer.TraceSample(traceNet, new double[] { 1, 1, 1, 0 }, new double[] { 0 });
                         break;
-                    case "5":
+                    case "6":
                         RunInteractivePrediction();
                         break;
-                    case "6":
+                    case "7":
                         AsciiVisualizer.RenderTopology(4, 5, 3);
                         break;
-                    case "7":
+                    case "8":
                         LogicGateExperiment.RunTrainUntilFit();
                         break;
-                    case "8":
+                    case "9":
                         HiddenOptimizer.RunOptimization();
                         break;
-                    case "9":
+                    case "0":
                         Console.WriteLine("Exiting. Thank you!");
                         return;
                     default:
-                        Console.WriteLine("Invalid selection. Please choose an option between 1 and 9.");
+                        Console.WriteLine("Invalid selection. Please choose an option between 0 and 9.");
                         break;
                 }
 

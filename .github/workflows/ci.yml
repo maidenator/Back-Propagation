@@ -49,6 +49,10 @@ jobs:
         if: runner.os == 'Linux'
         run: dotnet run --project src/BackPropagation.csproj --configuration Release --no-build -- --trace
 
-      - name: CLI smoke test - synthetic benchmark
+      - name: CLI smoke test - single benchmark
         if: runner.os == 'Linux'
-        run: dotnet run --project src/BackPropagation.csproj --configuration Release --no-build -- --synthetic
+        run: dotnet run --project src/BackPropagation.csproj --configuration Release --no-build -- --synthetic --epochs 20
+
+      - name: CLI smoke test - three-way comparison
+        if: runner.os == 'Linux'
+        run: dotnet run --project src/BackPropagation.csproj --configuration Release --no-build -- --compare

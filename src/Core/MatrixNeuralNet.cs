@@ -91,8 +91,8 @@ namespace BackPropagation.Core
             double[] initialWeights = new double[numWeights];
             for (int i = 0; i < initialWeights.Length; ++i)
             {
-                // Small random values between -0.01 and +0.01
-                initialWeights[i] = (0.02 * _rnd.NextDouble()) - 0.01;
+                // Small random values between 0.0001 and 0.001, matching the CS345 reference program.
+                initialWeights[i] = (0.001 - 0.0001) * _rnd.NextDouble() + 0.0001;
             }
             SetWeights(initialWeights);
         }
@@ -308,13 +308,11 @@ namespace BackPropagation.Core
                     {
                         for (int j = 0; j < _numHidden; ++j)
                         {
-                            // Weight decay: penalize weight magnitude (grad - decay * w)
-                            double grad = ihGrads[i][j];
-                            if (weightDecay > 0.0)
-                                grad -= weightDecay * _ihWeights[i][j];
-
-                            double delta = grad * learnRate;
+                            double delta = ihGrads[i][j] * learnRate;
                             _ihWeights[i][j] += delta;
+                            // L2 weight decay: shrink the weight after the update (matches the CS345 reference).
+                            if (weightDecay > 0.0)
+                                _ihWeights[i][j] -= weightDecay * _ihWeights[i][j];
                             _ihWeights[i][j] += ihPrevWeightsDelta[i][j] * momentum;
                             ihPrevWeightsDelta[i][j] = delta;
                         }
@@ -334,12 +332,11 @@ namespace BackPropagation.Core
                     {
                         for (int k = 0; k < _numOutput; ++k)
                         {
-                            double grad = hoGrads[j][k];
-                            if (weightDecay > 0.0)
-                                grad -= weightDecay * _hoWeights[j][k];
-
-                            double delta = grad * learnRate;
+                            double delta = hoGrads[j][k] * learnRate;
                             _hoWeights[j][k] += delta;
+                            // L2 weight decay: shrink the weight after the update (matches the CS345 reference).
+                            if (weightDecay > 0.0)
+                                _hoWeights[j][k] -= weightDecay * _hoWeights[j][k];
                             _hoWeights[j][k] += hoPrevWeightsDelta[j][k] * momentum;
                             hoPrevWeightsDelta[j][k] = delta;
                         }
@@ -427,6 +424,25 @@ namespace BackPropagation.Core
                 }
             }
             return sumCrossEntropy / dataset.Length;
+        }
+
+        /// <summary>
+        /// Euclidean (L2) norm of all trainable weights, excluding biases.
+        /// Used to measure the effect of weight decay on weight magnitude.
+        /// </summary>
+        public double WeightNorm()
+        {
+            double sumSquared = 0.0;
+
+            for (int i = 0; i < _numInput; ++i)
+                for (int j = 0; j < _numHidden; ++j)
+                    sumSquared += _ihWeights[i][j] * _ihWeights[i][j];
+
+            for (int j = 0; j < _numHidden; ++j)
+                for (int k = 0; k < _numOutput; ++k)
+                    sumSquared += _hoWeights[j][k] * _hoWeights[j][k];
+
+            return Math.Sqrt(sumSquared);
         }
 
         public double Accuracy(double[][] dataset)

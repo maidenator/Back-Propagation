@@ -14,34 +14,37 @@ namespace BackPropagation.Experiments
     /// </summary>
     public static class SyntheticBenchmark
     {
-        public static void RunDemo()
+        public static void RunDemo(int maxEpochs = 1000)
         {
             ExecuteBenchmark(
                 title: "CS345 STANDARD BENCHMARK (Mean Squared Error)",
                 lossFunc: LossFunction.MeanSquaredError,
-                weightDecay: 0.0
+                weightDecay: 0.0,
+                maxEpochs: maxEpochs
             );
         }
 
-        public static void RunCrossEntropyDemo()
+        public static void RunCrossEntropyDemo(int maxEpochs = 1000)
         {
             ExecuteBenchmark(
                 title: "CS345 EXTENSION 1: CROSS-ENTROPY ERROR (from 'WHAT TO DO')",
                 lossFunc: LossFunction.CrossEntropy,
-                weightDecay: 0.0
+                weightDecay: 0.0,
+                maxEpochs: maxEpochs
             );
         }
 
-        public static void RunWeightDecayDemo()
+        public static void RunWeightDecayDemo(int maxEpochs = 1000)
         {
             ExecuteBenchmark(
                 title: "CS345 EXTENSION 2: WEIGHT DECAY / L2 REGULARIZATION (from 'WHAT TO DO')",
                 lossFunc: LossFunction.MeanSquaredError,
-                weightDecay: 0.001
+                weightDecay: 0.001,
+                maxEpochs: maxEpochs
             );
         }
 
-        public static void ExecuteBenchmark(string title, LossFunction lossFunc, double weightDecay)
+        public static void ExecuteBenchmark(string title, LossFunction lossFunc, double weightDecay, int maxEpochs = 1000)
         {
             Console.WriteLine("================================================================================");
             Console.WriteLine($"            {title}");
@@ -68,7 +71,6 @@ namespace BackPropagation.Experiments
             var nn = new MatrixNeuralNet(numInput, numHidden, numOutput, seed);
             AsciiVisualizer.RenderTopology(numInput, numHidden, numOutput);
 
-            int maxEpochs = 1000;
             double learnRate = 0.05;
             double momentum = 0.01;
 
