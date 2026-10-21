@@ -9,12 +9,14 @@ weight update is written out by hand.
 ```bash
 git clone https://github.com/maidenator/Back-Propagation.git
 cd Back-Propagation
-dotnet run --project src/BackPropagation.csproj
+dotnet run --project src/BackPropagation.csproj -- --compare
 ```
 
-Requires the .NET 8 SDK. The default run trains three configurations (mean squared
-error, cross-entropy, cross-entropy + L2 weight decay) on the same seeded data and
-prints a comparison table.
+Requires the .NET 8 SDK. The comparison trains three configurations (mean squared error,
+cross-entropy, cross-entropy + L2 weight decay) on the same seeded data and prints a
+comparison table.
+
+On Windows, `dotnet run` with no arguments opens the Windows Forms dashboard instead.
 
 ## Results
 

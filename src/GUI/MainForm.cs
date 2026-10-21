@@ -119,12 +119,12 @@ namespace BackPropagation.GUI
 
             // The CS345 demo uses a fixed 4-input / 3-output classification topology.
             // The hidden-layer width remains configurable.
-            AddLabelAndControl(grpHyper, "Inputs:", nudInputs = new NumericUpDown { Value = 4, Minimum = 4, Maximum = 4, Width = 60 }, 15, 25);
-            AddLabelAndControl(grpHyper, "Hidden:", nudHidden = new NumericUpDown { Value = 5, Minimum = 1, Maximum = 50, Width = 60 }, 145, 25);
-            AddLabelAndControl(grpHyper, "Outputs:", nudOutputs = new NumericUpDown { Value = 3, Minimum = 3, Maximum = 3, Width = 60 }, 275, 25);
+            AddLabelAndControl(grpHyper, "Inputs:", nudInputs = new NumericUpDown { Minimum = 4, Maximum = 4, Value = 4, Width = 60 }, 15, 25);
+            AddLabelAndControl(grpHyper, "Hidden:", nudHidden = new NumericUpDown { Minimum = 1, Maximum = 50, Value = 5, Width = 60 }, 145, 25);
+            AddLabelAndControl(grpHyper, "Outputs:", nudOutputs = new NumericUpDown { Minimum = 3, Maximum = 3, Value = 3, Width = 60 }, 275, 25);
 
-            AddLabelAndControl(grpHyper, "Total Rows:", nudRows = new NumericUpDown { Value = 1000, Minimum = 50, Maximum = 10000, Increment = 100, Width = 80 }, 15, 60);
-            AddLabelAndControl(grpHyper, "Max Epochs:", nudEpochs = new NumericUpDown { Value = 1000, Minimum = 10, Maximum = 50000, Increment = 100, Width = 80 }, 205, 60);
+            AddLabelAndControl(grpHyper, "Total Rows:", nudRows = new NumericUpDown { Minimum = 50, Maximum = 10000, Value = 1000, Increment = 100, Width = 80 }, 15, 60);
+            AddLabelAndControl(grpHyper, "Max Epochs:", nudEpochs = new NumericUpDown { Minimum = 10, Maximum = 50000, Value = 1000, Increment = 100, Width = 80 }, 205, 60);
 
             AddLabelAndControl(grpHyper, "Learn Rate (η):", txtLearnRate = new TextBox { Text = "0.05", Width = 80 }, 15, 95);
             AddLabelAndControl(grpHyper, "Momentum (α):", txtMomentum = new TextBox { Text = "0.01", Width = 80 }, 205, 95);

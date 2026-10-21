@@ -23,9 +23,9 @@ namespace BackPropagation
             {
                 Console.OutputEncoding = System.Text.Encoding.UTF8;
             }
-            catch (IOException)
+            catch (Exception)
             {
-                // Redirected output without a console handle (for example CI pipelines).
+                // No console handle (GUI launch) or a console that refuses the encoding change.
             }
 
             if (args.Contains("--help") || args.Contains("-h") || args.Contains("-?"))
@@ -39,9 +39,12 @@ namespace BackPropagation
             bool forceCli = options.Contains("--cli") || options.Contains("-c");
             bool wantsMenu = options.Contains("--menu") || options.Contains("-m");
             bool wantsComparison = options.Contains("--compare") || options.Contains("--all") || options.Contains("-a");
+            bool noArguments = args.Length == 0;
 
 #if NET8_0_WINDOWS || WINDOWS
-            if (options.Contains("--gui") || options.Contains("-g"))
+            // On Windows the dashboard is the default entry point. Pass --compare (or --cli)
+            // to run the console comparison instead.
+            if (options.Contains("--gui") || options.Contains("-g") || noArguments)
             {
                 ApplicationConfiguration.Initialize();
                 Application.Run(new MainForm());
@@ -142,10 +145,14 @@ namespace BackPropagation
             Console.WriteLine("Usage: dotnet run --project src/BackPropagation.csproj -- [option] [--epochs N]");
             Console.WriteLine();
             Console.WriteLine("Options:");
-            Console.WriteLine("  --compare, -a        Train all three configurations and print the comparison table (default)");
+            Console.WriteLine("  --compare, -a        Train all three configurations and print the comparison table");
+            Console.WriteLine("  --cli, -c            Force the console comparison");
             Console.WriteLine("  --menu, -m           Launch the interactive terminal menu");
 #if NET8_0_WINDOWS || WINDOWS
             Console.WriteLine("  --gui, -g            Launch the Windows Forms graphical interface (Windows only)");
+            Console.WriteLine();
+            Console.WriteLine("  With no arguments the Windows Forms dashboard opens (Linux and macOS");
+            Console.WriteLine("  run the comparison instead).");
 #endif
             Console.WriteLine("  --synthetic, -s      Run CS345 4-5-3 benchmark (Standard MSE)");
             Console.WriteLine("  --cross-entropy, -ce Run CS345 benchmark using Cross-Entropy loss");

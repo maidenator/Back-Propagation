@@ -51,6 +51,6 @@ src/
 
 ## 5. Packaging
 
-- `.csproj` picks `net8.0-windows` with WinForms on Windows and plain `net8.0` elsewhere, so `dotnet run` works on every platform.
+- `.csproj` picks `net8.0-windows` with WinForms on Windows and plain `net8.0` elsewhere, so `dotnet run` works on every platform. The output type is a console app so CLI output is always visible; the dashboard is opened explicitly on Windows.
 - CI builds on Linux and Windows and smoke-tests the CLI.
 - MIT license, `.editorconfig`, `.gitattributes`, and `.gitignore` keep the tree clean.
